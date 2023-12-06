@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class ASTooltip extends StatefulWidget {
@@ -10,8 +11,7 @@ class ASTooltip extends StatefulWidget {
   final Widget? content;
   final int milliseconds;
   final Color color;
-  final ArrowAlign alignment;
-  final double width;
+  final ArrowAlign arrowAlign;
   final bool defaultShow;
   final Duration? animateDuration;
   final double offsetLeft;
@@ -20,15 +20,17 @@ class ASTooltip extends StatefulWidget {
   final double offsetBottom;
   final void Function(ASTooltipState)? initialCallback;
   final void Function()? dismissCallback;
+  final bool showBackdrop;
+  final double backdropOpacity;
+  final double? width;
   const ASTooltip({
-    Key? key,
+    super.key,
     required this.child,
     this.text,
     this.content,
     this.milliseconds = 3000,
     this.color = Colors.black,
-    this.alignment = ArrowAlign.topRight,
-    required this.width,
+    this.arrowAlign = ArrowAlign.topRight,
     this.defaultShow = true,
     this.animateDuration,
     this.offsetLeft = 0,
@@ -37,7 +39,10 @@ class ASTooltip extends StatefulWidget {
     this.offsetBottom = 0,
     this.initialCallback,
     this.dismissCallback,
-  }) : super(key: key);
+    this.showBackdrop = false,
+    this.backdropOpacity = .2,
+    this.width,
+  });
 //: assert(text != null && content != null, "text and content must one")
   @override
   State<ASTooltip> createState() => ASTooltipState();
@@ -49,6 +54,7 @@ class ASTooltipState extends State<ASTooltip> {
   OverlayEntry? _entry;
   late final bool _disableTap = widget.milliseconds == 0 ? true : false;
   Timer? timer;
+  Widget contentWidget = const SizedBox();
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -56,6 +62,7 @@ class ASTooltipState extends State<ASTooltip> {
         show(context);
       }
     });
+    initContentWidget();
     widget.initialCallback?.call(this);
     super.initState();
   }
@@ -64,8 +71,7 @@ class ASTooltipState extends State<ASTooltip> {
   void dispose() {
     hide();
     try {
-      GestureBinding.instance.pointerRouter
-          .removeGlobalRoute(_handlePointerEvent);
+      GestureBinding.instance.pointerRouter.removeGlobalRoute(_handlePointerEvent);
     } catch (e) {
       //ignore e
     }
@@ -87,6 +93,30 @@ class ASTooltipState extends State<ASTooltip> {
     }
   }
 
+  void initContentWidget() {
+    if (widget.text != null) {
+      contentWidget = Text(
+        widget.text!,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+          height: 18 / 14,
+        ),
+      );
+    } else if (widget.content != null) {
+      contentWidget = widget.content!;
+    }
+
+    contentWidget = Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        width: widget.width,
+        padding: const EdgeInsets.all(10),
+        child: contentWidget,
+      ),
+    );
+  }
+
   void show(
     BuildContext context, {
     bool dimiss = true,
@@ -94,15 +124,12 @@ class ASTooltipState extends State<ASTooltip> {
     if (!mounted) return;
     try {
       if (dimiss) {
-        GestureBinding.instance.pointerRouter
-            .addGlobalRoute(_handlePointerEvent);
+        GestureBinding.instance.pointerRouter.addGlobalRoute(_handlePointerEvent);
       }
     } catch (e) {
       //ignore e
     }
-    _entry = OverlayEntry(
-      builder: _buildTooltipWidget,
-    );
+    _entry = OverlayEntry(builder: _buildTooltipWidget);
     Overlay.of(context).insert(_entry!);
     _addTimer();
   }
@@ -120,64 +147,101 @@ class ASTooltipState extends State<ASTooltip> {
   Widget _buildTooltipWidget(BuildContext _) {
     final RenderBox box = context.findRenderObject()! as RenderBox;
     final size = box.size;
-    final Offset target = box.localToGlobal(size.center(Offset.zero));
+    final offset = box.localToGlobal(size.center(Offset.zero));
 
-    /// container
+    final Size contentSize = measureWidget(contentWidget);
+
     double? containerTop;
-    double? containerRight;
     double? containerLeft;
-    double? containerBottom;
-    Size screenSize = MediaQuery.of(context).size;
-    double screenWidth = screenSize.width;
-    // double screenHeight = screenSize.height;
 
-    if (widget.alignment == ArrowAlign.topRight) {
-      containerTop = target.dy + 20 + 10 - widget.offsetTop;
-      containerRight = screenWidth - target.dx - 20 - widget.offsetRight;
-    } else if (widget.alignment == ArrowAlign.bottomCenter) {
-      containerTop = target.dy - 44 - 10 - 22 - widget.offsetTop;
-      containerLeft = target.dx - (widget.width / 2) - widget.offsetLeft;
-    } else if (widget.alignment == ArrowAlign.bottomRight) {
-      containerTop = target.dy - 44 - 10 - 22 - widget.offsetTop;
-      containerRight = 18 - widget.offsetRight;
+    if (widget.arrowAlign.isTopCenter || widget.arrowAlign.isTopLeft || widget.arrowAlign.isTopRight) {
+      containerTop = offset.dy + (size.height / 2) + 10;
+      if (widget.arrowAlign.isTopCenter) {
+        containerLeft = offset.dx - contentSize.width / 2;
+      }
+      if (widget.arrowAlign.isTopLeft) {
+        containerLeft = offset.dx - size.width / 2 - 10;
+      }
+      if (widget.arrowAlign.isTopRight) {
+        containerLeft = offset.dx - contentSize.width + 20;
+      }
     }
-    debugPrint(
-        '$tag $target box.size=${box.size} containerTop=$containerTop containerRight=$containerRight containerLeft=$containerLeft containerBottom=$containerBottom');
-    Widget contentWidget;
-    if (widget.text != null) {
-      contentWidget = Text(
-        widget.text!,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w400,
-          height: 18 / 14,
-        ),
-      );
-    } else {
-      contentWidget = widget.content!;
+    if (widget.arrowAlign.isBottomCenter || widget.arrowAlign.isBottomLeft || widget.arrowAlign.isBottomRight) {
+      containerTop = offset.dy - (size.height / 2) - contentSize.height - 10;
+      if (widget.arrowAlign.isBottomCenter) {
+        containerLeft = offset.dx - contentSize.width / 2;
+      }
+      if (widget.arrowAlign.isBottomLeft) {
+        containerLeft = offset.dx - size.width / 2 - 10;
+      }
+      if (widget.arrowAlign.isBottomRight) {
+        containerLeft = offset.dx - contentSize.width + 20;
+      }
     }
+    if (widget.arrowAlign.isLeftBottom || widget.arrowAlign.isLeftCenter || widget.arrowAlign.isLeftTop) {
+      containerLeft = offset.dx + (size.width / 2) + 10;
+      if (widget.arrowAlign.isLeftBottom) {
+        containerTop = offset.dy - contentSize.height + 20;
+      }
+      if (widget.arrowAlign.isLeftCenter) {
+        containerTop = offset.dy - (contentSize.height / 2);
+      }
+      if (widget.arrowAlign.isLeftTop) {
+        containerTop = offset.dy - 20;
+      }
+    }
+    if (widget.arrowAlign.isRightBottom || widget.arrowAlign.isRightCenter || widget.arrowAlign.isRightTop) {
+      containerLeft = offset.dx - (size.width / 2) - 10 - contentSize.width;
+      if (widget.arrowAlign.isRightBottom) {
+        containerTop = offset.dy - contentSize.height + 20;
+      }
+      if (widget.arrowAlign.isRightCenter) {
+        containerTop = offset.dy - (contentSize.height / 2);
+      }
+      if (widget.arrowAlign.isRightTop) {
+        containerTop = offset.dy - 20;
+      }
+    }
+
+    if (containerTop != null) {
+      containerTop += widget.offsetTop;
+    }
+    if (containerLeft != null) {
+      containerLeft += widget.offsetLeft;
+    }
+
+    debugPrint('ssss offset=$offset box.size=${box.size} contentSize=$contentSize left=$containerLeft top=$containerTop');
 
     final stackWidget = Stack(
       fit: StackFit.expand,
       children: [
+        if (widget.showBackdrop)
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            color: Colors.black.withOpacity(widget.backdropOpacity),
+          ),
+        if (widget.showBackdrop)
+          Positioned(
+            left: offset.dx - (size.width / 2),
+            top: offset.dy - (size.height / 2),
+            child: Container(
+              // color: ASColors.random,
+              child: widget.child,
+            ),
+          ),
         Positioned(
-          right: containerRight,
           left: containerLeft,
           top: containerTop,
-          bottom: containerBottom,
-          width: widget.width,
+          width: contentSize.width,
           child: CustomPaint(
             painter: MyCustomPainter(
-              triangleAlign: widget.alignment,
+              triangleAlign: widget.arrowAlign,
               angleWidth: 15,
               radius: 15,
               color: widget.color,
             ),
-            child: Container(
-              width: widget.width,
-              padding: const EdgeInsets.all(10),
-              child: contentWidget,
-            ),
+            child: contentWidget,
           ),
         ),
       ],
@@ -452,4 +516,36 @@ enum ArrowAlign {
   bool get isLeftBottom => this == leftBottom;
   bool get isLeftCenter => this == leftCenter;
   bool get isLeftTop => this == leftTop;
+}
+
+Size measureWidget(Widget widget) {
+  final PipelineOwner pipelineOwner = PipelineOwner();
+  final MeasurementView rootView = pipelineOwner.rootNode = MeasurementView();
+  final BuildOwner buildOwner = BuildOwner(focusManager: FocusManager());
+  final RenderObjectToWidgetElement<RenderBox> element = RenderObjectToWidgetAdapter<RenderBox>(
+    container: rootView,
+    debugShortDescription: '[root]',
+    child: widget,
+  ).attachToRenderTree(buildOwner);
+  try {
+    rootView.scheduleInitialLayout();
+    pipelineOwner.flushLayout();
+    return rootView.size;
+  } finally {
+    // Clean up.
+    element.update(RenderObjectToWidgetAdapter<RenderBox>(container: rootView));
+    buildOwner.finalizeTree();
+  }
+}
+
+class MeasurementView extends RenderBox with RenderObjectWithChildMixin<RenderBox> {
+  @override
+  void performLayout() {
+    assert(child != null);
+    child!.layout(const BoxConstraints(), parentUsesSize: true);
+    size = child!.size;
+  }
+
+  @override
+  void debugAssertDoesMeetConstraints() => true;
 }
