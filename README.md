@@ -24,46 +24,210 @@ flutter pub add hmb_tooltip
 ## Usage
 
 ```dart
-@override
+class ASTooltipDemo extends StatelessWidget {
+  const ASTooltipDemo({super.key});
+
+  @override
   Widget build(BuildContext context) {
-    return ASTooltip(
-      content: Obx(
-        () {
-          return ASDurationCountdown(
-            endTime: widget.endedAt.value ?? DateTime.now(),
-            childBuilder: (duration) {
-              return ASText14(
-                'Your session is running out in ${duration.durationTime} ',
-                color: ASColors.white,
-                fontWeight: FontWeight.w400,
-                height: 18 / 14,
-              );
-            },
-          );
-        },
+    return Scaffold(
+      appBar: const ASAppBar(
+        title: 'tooltip demo page',
       ),
-      offsetRight: -20,
-      offsetTop: 5,
-      width: 248.w,
-      color: ASColors.color5F5CB0,
-      defaultShow: false,
-      alignment: ArrowAlign.topRight,
-      milliseconds: 0,
-      child: ASDurationOnlineView(
-        onlines: widget.onlines,
-        duration: widget.duration,
+      body: Column(
+        children: [
+          50.vsh,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.bottomLeft,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.bottomCenter,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.bottomRight,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+            ],
+          ),
+          20.vsh,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.topLeft,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.topCenter,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.topRight,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+            ],
+          ),
+          200.vsh,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.rightBottom,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.rightCenter,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.rightTop,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+            ],
+          ),
+          200.vsh,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.leftBottom,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.leftCenter,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+              60.vsw,
+              ASTooltip(
+                text: 'Click and Ask me questions!',
+                color: ASColors.color5F5CB0,
+                milliseconds: 0,
+                arrowAlign: ArrowAlign.leftTop,
+                animateDuration: const Duration(milliseconds: 1500),
+                width: 80,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: ASColors.random,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-      initialCallback: (tooltipState) {
-        this.tooltipState = tooltipState;
-        // Future.delayed(const Duration(seconds: 12), () {
-        //   tooltipState.show(context);
-        // });
-      },
-      dismissCallback: () {
-        tooltipState = null;
-      },
     );
   }
+}
 ```
 
 ## Additional information
