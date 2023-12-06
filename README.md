@@ -20,6 +20,7 @@ A Custom Tooltip component
 ## Getting started
 
 flutter pub add hmb_tooltip
+![Demo](https://github.com/moweiran/hmb_tooltip/assets/8222923/f633a3da-5db5-4876-bfe1-3dc6ec8ce7d2)
 
 ## Usage
 
