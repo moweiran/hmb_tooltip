@@ -54,7 +54,9 @@ class ASTooltipState extends State<ASTooltip> {
   OverlayEntry? _entry;
   late final bool _disableTap = widget.milliseconds == 0 ? true : false;
   Timer? timer;
-  Widget contentWidget = const SizedBox();
+  Widget tooltipWidget = const SizedBox();
+  final layerLink = LayerLink();
+  final angleWidth = 15.0;
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -71,7 +73,8 @@ class ASTooltipState extends State<ASTooltip> {
   void dispose() {
     hide();
     try {
-      GestureBinding.instance.pointerRouter.removeGlobalRoute(_handlePointerEvent);
+      GestureBinding.instance.pointerRouter
+          .removeGlobalRoute(_handlePointerEvent);
     } catch (e) {
       //ignore e
     }
@@ -83,7 +86,10 @@ class ASTooltipState extends State<ASTooltip> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _disableTap ? null : () => show(context),
-      child: widget.child,
+      child: CompositedTransformTarget(
+        link: layerLink,
+        child: widget.child,
+      ),
     );
   }
 
@@ -95,7 +101,7 @@ class ASTooltipState extends State<ASTooltip> {
 
   void initContentWidget() {
     if (widget.text != null) {
-      contentWidget = Text(
+      tooltipWidget = Text(
         widget.text!,
         style: TextStyle(
           color: Colors.white,
@@ -104,15 +110,15 @@ class ASTooltipState extends State<ASTooltip> {
         ),
       );
     } else if (widget.content != null) {
-      contentWidget = widget.content!;
+      tooltipWidget = widget.content!;
     }
 
-    contentWidget = Directionality(
+    tooltipWidget = Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
         width: widget.width,
         padding: const EdgeInsets.all(10),
-        child: contentWidget,
+        child: tooltipWidget,
       ),
     );
   }
@@ -124,12 +130,16 @@ class ASTooltipState extends State<ASTooltip> {
     if (!mounted) return;
     try {
       if (dimiss) {
-        GestureBinding.instance.pointerRouter.addGlobalRoute(_handlePointerEvent);
+        GestureBinding.instance.pointerRouter
+            .addGlobalRoute(_handlePointerEvent);
       }
     } catch (e) {
       //ignore e
     }
-    _entry = OverlayEntry(builder: _buildTooltipWidget);
+    _entry = OverlayEntry(
+      maintainState: true,
+      builder: _buildTooltipWidget,
+    );
     Overlay.of(context).insert(_entry!);
     _addTimer();
   }
@@ -146,110 +156,128 @@ class ASTooltipState extends State<ASTooltip> {
 
   Widget _buildTooltipWidget(BuildContext _) {
     final RenderBox box = context.findRenderObject()! as RenderBox;
-    final size = box.size;
-    final offset = box.localToGlobal(size.center(Offset.zero));
+    final Size childSize = box.size;
+    final Size tooltipSize = measureWidget(tooltipWidget);
+    Offset offset = const Offset(0, 0);
+    double x = 0;
+    double y = 0;
 
-    final Size contentSize = measureWidget(contentWidget);
+    bool isArrowTop = widget.arrowAlign.isTopCenter ||
+        widget.arrowAlign.isTopLeft ||
+        widget.arrowAlign.isTopRight;
 
-    double? containerTop;
-    double? containerLeft;
+    bool isArrowBottom = widget.arrowAlign.isBottomCenter ||
+        widget.arrowAlign.isBottomLeft ||
+        widget.arrowAlign.isBottomRight;
 
-    if (widget.arrowAlign.isTopCenter || widget.arrowAlign.isTopLeft || widget.arrowAlign.isTopRight) {
-      containerTop = offset.dy + (size.height / 2) + 10;
-      if (widget.arrowAlign.isTopCenter) {
-        containerLeft = offset.dx - contentSize.width / 2;
+    bool isArrowRight = widget.arrowAlign.isRightBottom ||
+        widget.arrowAlign.isRightCenter ||
+        widget.arrowAlign.isRightTop;
+
+    bool isArrowLeft = widget.arrowAlign.isLeftBottom ||
+        widget.arrowAlign.isLeftCenter ||
+        widget.arrowAlign.isLeftTop;
+
+    bool isArrowHorizontal = isArrowRight || isArrowLeft;
+
+    bool isArrowVertical = isArrowTop || isArrowBottom;
+
+    if (isArrowVertical) {
+      if (isArrowTop) {
+        y = childSize.height + angleWidth / 2;
       }
-      if (widget.arrowAlign.isTopLeft) {
-        containerLeft = offset.dx - size.width / 2 - 10;
+      if (isArrowBottom) {
+        y = -(tooltipSize.height + angleWidth / 2);
       }
-      if (widget.arrowAlign.isTopRight) {
-        containerLeft = offset.dx - contentSize.width + 20;
+
+      if (widget.arrowAlign.isTopCenter || widget.arrowAlign.isBottomCenter) {
+        x = (tooltipSize.width > childSize.width
+                ? -(tooltipSize.width - childSize.width)
+                : childSize.width - tooltipSize.width) /
+            2;
+      }
+      if (widget.arrowAlign.isTopLeft || widget.arrowAlign.isBottomLeft) {
+        x = (childSize.width / 2) - angleWidth - angleWidth / 2;
+      }
+      if (widget.arrowAlign.isTopRight || widget.arrowAlign.isBottomRight) {
+        x = -(tooltipSize.width - childSize.width / 2) +
+            angleWidth +
+            angleWidth / 2;
       }
     }
-    if (widget.arrowAlign.isBottomCenter || widget.arrowAlign.isBottomLeft || widget.arrowAlign.isBottomRight) {
-      containerTop = offset.dy - (size.height / 2) - contentSize.height - 10;
-      if (widget.arrowAlign.isBottomCenter) {
-        containerLeft = offset.dx - contentSize.width / 2;
+    if (isArrowHorizontal) {
+      if (isArrowLeft) {
+        x = childSize.width + angleWidth / 2;
       }
-      if (widget.arrowAlign.isBottomLeft) {
-        containerLeft = offset.dx - size.width / 2 - 10;
+      if (isArrowRight) {
+        x = -(tooltipSize.width + angleWidth / 2);
       }
-      if (widget.arrowAlign.isBottomRight) {
-        containerLeft = offset.dx - contentSize.width + 20;
+      if (widget.arrowAlign.isLeftBottom || widget.arrowAlign.isRightBottom) {
+        y = -(tooltipSize.height - childSize.height / 2) +
+            angleWidth +
+            angleWidth / 2;
       }
-    }
-    if (widget.arrowAlign.isLeftBottom || widget.arrowAlign.isLeftCenter || widget.arrowAlign.isLeftTop) {
-      containerLeft = offset.dx + (size.width / 2) + 10;
-      if (widget.arrowAlign.isLeftBottom) {
-        containerTop = offset.dy - contentSize.height + 20;
+      if (widget.arrowAlign.isLeftCenter || widget.arrowAlign.isRightCenter) {
+        y = (tooltipSize.height > childSize.height
+                ? -(tooltipSize.height - childSize.height)
+                : childSize.height - tooltipSize.height) /
+            2;
       }
-      if (widget.arrowAlign.isLeftCenter) {
-        containerTop = offset.dy - (contentSize.height / 2);
-      }
-      if (widget.arrowAlign.isLeftTop) {
-        containerTop = offset.dy - 20;
-      }
-    }
-    if (widget.arrowAlign.isRightBottom || widget.arrowAlign.isRightCenter || widget.arrowAlign.isRightTop) {
-      containerLeft = offset.dx - (size.width / 2) - 10 - contentSize.width;
-      if (widget.arrowAlign.isRightBottom) {
-        containerTop = offset.dy - contentSize.height + 20;
-      }
-      if (widget.arrowAlign.isRightCenter) {
-        containerTop = offset.dy - (contentSize.height / 2);
-      }
-      if (widget.arrowAlign.isRightTop) {
-        containerTop = offset.dy - 20;
+      if (widget.arrowAlign.isLeftTop || widget.arrowAlign.isRightTop) {
+        y = (childSize.height / 2) - angleWidth - angleWidth / 2;
       }
     }
 
-    if (containerTop != null) {
-      containerTop += widget.offsetTop;
-    }
-    if (containerLeft != null) {
-      containerLeft += widget.offsetLeft;
-    }
-
-    debugPrint('ssss offset=$offset box.size=${box.size} contentSize=$contentSize left=$containerLeft top=$containerTop');
-
-    final stackWidget = Stack(
-      fit: StackFit.expand,
-      children: [
-        if (widget.showBackdrop)
+    offset = Offset(x, y);
+    Widget overlay = _buildOverlay(offset);
+    if (widget.showBackdrop) {
+      overlay = Stack(
+        fit: StackFit.expand,
+        children: [
           Container(
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
             color: Colors.black.withOpacity(widget.backdropOpacity),
           ),
-        if (widget.showBackdrop)
           Positioned(
-            left: offset.dx - (size.width / 2),
-            top: offset.dy - (size.height / 2),
-            child: Container(
-              // color: ASColors.random,
+            width: childSize.width,
+            height: childSize.height,
+            child: CompositedTransformFollower(
+              link: layerLink,
+              showWhenUnlinked: false,
               child: widget.child,
             ),
           ),
-        Positioned(
-          left: containerLeft,
-          top: containerTop,
-          width: contentSize.width,
-          child: CustomPaint(
-            painter: MyCustomPainter(
-              triangleAlign: widget.arrowAlign,
-              angleWidth: 15,
-              radius: 15,
-              color: widget.color,
-            ),
-            child: contentWidget,
-          ),
-        ),
-      ],
-    );
-    if (widget.animateDuration == null) {
-      return stackWidget;
+          overlay,
+        ],
+      );
     }
-    return stackWidget.animate().fadeIn(duration: widget.animateDuration);
+    if (widget.animateDuration == null) {
+      return overlay;
+    }
+    return overlay.animate().fadeIn(duration: widget.animateDuration);
+  }
+
+  Widget _buildOverlay(Offset offset) {
+    Widget overlay = Positioned(
+      left: 0,
+      top: 0,
+      child: CompositedTransformFollower(
+        link: layerLink,
+        showWhenUnlinked: false,
+        offset: offset,
+        child: CustomPaint(
+          painter: MyCustomPainter(
+            triangleAlign: widget.arrowAlign,
+            angleWidth: angleWidth,
+            radius: 15,
+            color: widget.color,
+          ),
+          child: tooltipWidget,
+        ),
+      ),
+    );
+    return overlay;
   }
 
   void _addTimer() {
@@ -522,7 +550,8 @@ Size measureWidget(Widget widget) {
   final PipelineOwner pipelineOwner = PipelineOwner();
   final MeasurementView rootView = pipelineOwner.rootNode = MeasurementView();
   final BuildOwner buildOwner = BuildOwner(focusManager: FocusManager());
-  final RenderObjectToWidgetElement<RenderBox> element = RenderObjectToWidgetAdapter<RenderBox>(
+  final RenderObjectToWidgetElement<RenderBox> element =
+      RenderObjectToWidgetAdapter<RenderBox>(
     container: rootView,
     debugShortDescription: '[root]',
     child: widget,
@@ -538,7 +567,8 @@ Size measureWidget(Widget widget) {
   }
 }
 
-class MeasurementView extends RenderBox with RenderObjectWithChildMixin<RenderBox> {
+class MeasurementView extends RenderBox
+    with RenderObjectWithChildMixin<RenderBox> {
   @override
   void performLayout() {
     assert(child != null);
